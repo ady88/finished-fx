@@ -1,0 +1,213 @@
+{
+  "abilities": [
+    {
+      "ability": "scoreCard",
+      "description": "Place card in the sorted pile if it can be scored. It can be scored only if it's the next higher up card in the sorted pile. So if the sorted pile contains 1, 2, 3 and in the present area you now draw 20, 6, 4 then you automatically place 4 in the sorted pile so now sorted contains 1, 2, 3 and 4. After this you must draw a new card from the draw pile",
+      "requiresCandy": false,
+      "cards": [],
+      "frequency": 0,
+      "order": 2,
+      "next": 1,
+      "limit": 1,
+      "automatic": "true"
+    },
+    {
+      "ability": "start",
+      "description": "The starting card of the game. No special effect beyond scoring it automatically in the sorted pile when drawn in the present area.",
+      "requiresCandy": false,
+      "cards": [1],
+      "frequency": 1,
+      "order": 2,
+      "next": 1,
+      "limit": 1,
+      "automatic": "true"
+    },
+    {
+      "ability": "takeCandy",
+      "description": "Whenever a card with the takeCandy symbol enters the present area at the start of a turn, gain 1 candy token by moving it from the reserved stash into the active stash. Game starts with 5 candy in active stash and 5 candy in reserved stash. Note: the take candy ability only takes place if cards were retrieved in the present area from the draw stack not the past or future areas.",
+      "requiresCandy": false,
+      "cards": [3, 6, 10, 15, 21, 28, 36, 45],
+      "frequency": 8,
+      "order": 1,
+      "next": 2,
+      "limit": 1,
+      "automatic": "true"
+    },
+    {
+      "ability": "drawTwo",
+      "description": "Draw two additional cards from the draw pile for the cost of 1 candy.",
+      "requiresCandy": true,
+      "cards": [2],
+      "frequency": 1,
+      "order": 3,
+      "next": 1,
+      "limit": 1,
+      "automatic": "false"
+    },
+    {
+      "ability": "belowTheStack",
+      "description": "Place all cards from the present area under the draw pile and immediately end the current turn. With this you skip the move to the past step since the present area cards will go in order below the draw stack. After doing this follow the moveToPast ability rule - if there are more than 3 cards in the past area, place the oldest of these cards one after the other below the draw stack until 3 cards remain in the past area. If there are 3 or fewer cards in the past area then no cards are moved below the draw stack.",
+      "requiresCandy": true,
+      "cards": [4, 7, 29, 42],
+      "frequency": 4,
+      "order": 3,
+      "next": 8,
+      "limit": 1,
+      "automatic": "false"
+    },
+    {
+      "ability": "cardsIntoPast",
+      "description": "Select 2 cards from the present area and move them into the past pile. Then draw 2 new cards from the draw stack into the present area",
+      "requiresCandy": true,
+      "cards": [5, 11, 17, 23, 25, 41],
+      "frequency": 6,
+      "order": 3,
+      "next": 1,
+      "limit": 1,
+      "automatic": "false"
+    },
+    {
+      "ability": "cardsFromPast",
+      "description": "Retrieve the first 2 cards from the past pile into the present area.",
+      "requiresCandy": true,
+      "cards": [8, 18, 30, 44],
+      "frequency": 4,
+      "order": 3,
+      "next": 2,
+      "limit": 1,
+      "automatic": "false"
+    },
+    {
+      "ability": "drawOne",
+      "description": "Draw one additional card from the draw pile.",
+      "requiresCandy": true,
+      "cards": [9, 14, 20, 27, 31, 34, 46],
+      "frequency": 8,
+      "order": 3,
+      "next": 1,
+      "limit": 1,
+      "automatic": "false"
+    },
+    {
+      "ability": "drawOne3x",
+      "description": "Draw one additional card from the draw pile. Can be activated 3 times. So each time you put a candy on it you draw a card, can put maximum 3 candy on it",
+      "requiresCandy": true,
+      "cards": [47],
+      "frequency": 8,
+      "order": 3,
+      "next": 1,
+      "limit": 3,
+      "automatic": "false"
+    },
+    {
+      "ability": "cardIntoFuture",
+      "description": "Place one card from the present area into the future pile. When you end your turn by moving the cards from the present area to the past area and begin the next turn by drawing 3 new cards you add that card to the present area",
+      "requiresCandy": true,
+      "cards": [12, 19, 32, 40],
+      "frequency": 4,
+      "order": 3,
+      "next": 3,
+      "limit": 1,
+      "automatic": "false"
+    },
+    {
+      "ability": "exchangePresentCardOrder",
+      "description": "Exchange the order of any 2 cards from the present area.",
+      "requiresCandy": false,
+      "cards": [],
+      "frequency": 4,
+      "order": 3,
+      "next": 3,
+      "limit": 1,
+      "automatic": "false"
+    },
+    {
+      "ability": "exchangeCard",
+      "description": "Draw one card from the draw stack and place it into the present area. Then take any one card from the present area - including the one you just drawn and place it face down on top of the draw stack",
+      "requiresCandy": true,
+      "cards": [13, 22, 33, 39, 43],
+      "frequency": 5,
+      "order": 3,
+      "next": 1,
+      "limit": 1,
+      "automatic": "false"
+    },
+    {
+      "ability": "allCardsIntoFuture",
+      "description": "Move all cards from the present area into the future pile. On the next turn, those cards become the new present area. If when trying to activate the allCardsIntoFuture ability after you already activated once this action, you move the first future area one step further into a second future area and move the cards from the present area into the now empty first future area. You now draw 3 cards for the present area. after you decide to move the cards to the past area you rezolve the future areas in reverse order - first future area first. When this ability is executed keep track of the number of future areas by incrementing a 'activeFutureAreas' variable - by default 0.",
+      "requiresCandy": true,
+      "cards": [16, 24, 26, 35, 38],
+      "frequency": 5,
+      "order": 3,
+      "next": 4,
+      "limit": 1,
+      "automatic": "false"
+    },
+    {
+      "ability": "resetCandies",
+      "description": "Remove all candy currently placed on any cards in the present and future areas, except the one placed on card 37. Place these candy back on the reserved stash. Thus, you may activate all these actions again if you use more candy.",
+      "requiresCandy": true,
+      "cards": [37],
+      "frequency": 1,
+      "order": 3,
+      "next": 3,
+      "limit": 1,
+      "automatic": "false"
+    },
+    {
+      "ability": "drinkCofee",
+      "description": "If card 48 is moved into the past area, automatically spend 1 coffee token. If tokens would drop below 0, the game ends immediately.",
+      "requiresCandy": false,
+      "cards": [48],
+      "frequency": 1,
+      "order": 7,
+      "next": 8,
+      "limit": 1,
+      "automatic": "true"
+    },
+    {
+      "ability": "endTurnBegin",
+      "description": "Move all cards from the present area into the past area. Remove the candy from all these moved cards putting this candy back in the reserved stash",
+      "requiresCandy": false,
+      "cards": [],
+      "frequency": 0,
+      "order": 4,
+      "next": 5,
+      "limit": 1,
+      "automatic": "true"
+    },
+    {
+      "ability": "sequenceRule",
+      "description": "If you move a sequence of at least 3 cards which are in ascending numerical order after doing the end turn begin ability you receive the number of candy of the sequence length minus one. You get this candy from the reserved stash and place them in the active stash. You may have multiple such sequences and you would get candy for each of them.",
+      "requiresCandy": false,
+      "cards": [],
+      "frequency": 0,
+      "order": 5,
+      "next": 6,
+      "limit": 1,
+      "automatic": "true"
+    },
+    {
+      "ability": "endTurnEnd",
+      "description": "if there are more than 3 cards in the past area, place the oldest of these cards one after the other below the draw stack until 3 cards remain in the past area. If there are 3 or fewer cards in the past area then no cards are moved below the draw stack.",
+      "requiresCandy": false,
+      "cards": [],
+      "frequency": 0,
+      "order": 8,
+      "next": 0,
+      "limit": 1,
+      "automatic": "true"
+    },
+    {
+      "ability": "beginTurn",
+      "description": "If 'activeFutureAreas' = 0  draw the first 3 cards from the draw stack and place them in the present area. If the activeFutureAreas > 0 place cards in the first available future area into the present area and decrease activeFutureAreas by 1.",
+      "requiresCandy": false,
+      "cards": [],
+      "frequency": 0,
+      "order": 0,
+      "next": 1,
+      "limit": 1,
+      "automatic": "true"
+    }
+  ]
+}
