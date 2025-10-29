@@ -1,0 +1,169 @@
+package com.adrian.finished.ui.controller;
+
+import com.adrian.finished.model.Card;
+import com.adrian.finished.model.GameState;
+import com.adrian.finished.model.abilities.AbilitySpec;
+import com.adrian.finished.ui.DimensionService;
+import com.adrian.finished.ui.card.InteractiveCardComponent;
+import com.adrian.finished.ui.layout.*;
+import com.adrian.finished.ui.pipeline.UIDecisionProvider;
+import com.adrian.finished.ui.pipeline.GameLoopManager;
+import com.adrian.finished.ui.pipeline.UIGameStateSynchronizer;
+import com.adrian.finished.ui.pipeline.AbilityActivationManager;
+import java.util.List;
+import java.util.HashSet;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+
+/**
+ * Main game controller that manages the UI state and coordinates interactions
+ * between different game areas. Handles mock data setup for Milestone 2.
+ */
+public class GameController {
+
+    private final DimensionService dimensionService;
+    private final GameRootLayout rootLayout;
+    private final GameAreasLayout gameAreasLayout;
+    private final UIDecisionProvider decisionProvider;
+    private final GameLoopManager gameLoopManager;
+    private final UIGameStateSynchronizer uiSynchronizer;
+    private final AbilityActivationManager abilityActivationManager;
+
+    // Area references
+    private final PresentAreaLayout presentArea;
+    private final FutureAreasLayout futureAreas;
+    private final PastAreaLayout pastArea;
+    private final ActiveStashLayout activeStash;
+    private final FinishedPileOverlay finishedPile;
+
+    public GameController(Stage primaryStage) {
+        // Create scene first to get dimensions
+        Scene scene = new Scene(new javafx.scene.layout.Pane(), 1200, 800);
+
+        // Initialize dimension service
+        this.dimensionService = new DimensionService(
+            scene.widthProperty(),
+            scene.heightProperty()
+        );
+
+        // Create root layout
+        this.rootLayout = new GameRootLayout(dimensionService);
+        this.gameAreasLayout = rootLayout.getGameAreasLayout();
+
+        // Initialize decision provider
+        this.decisionProvider = new UIDecisionProvider(rootLayout, dimensionService);
+
+        // Initialize game loop system
+        this.gameLoopManager = new GameLoopManager(decisionProvider);
+        this.abilityActivationManager = new AbilityActivationManager();
+
+        // Get references to all areas
+        this.presentArea = gameAreasLayout.getPresentAreaLayout();
+        this.futureAreas = gameAreasLayout.getFutureAreasLayout();
+        this.pastArea = gameAreasLayout.getPastAreaLayout();
+        this.activeStash = gameAreasLayout.getActiveStashLayout();
+        this.finishedPile = rootLayout.getFinishedPileOverlay();
+
+        // Initialize UI synchronizer
+        this.uiSynchronizer = new UIGameStateSynchronizer(gameAreasLayout, finishedPile);
+
+        // Set up interactions
+        setupInteractions();
+
+        // Set up game loop integration
+        setupGameLoop();
+
+        // Set up scene
+        scene.setRoot(rootLayout);
+        scene.getStylesheets().add(getClass().getResource("/styles/game.css").toExternalForm());
+
+        primaryStage.setScene(scene);
+        primaryStage.setTitle("Finished FX - Card Game UI");
+        primaryStage.setMinWidth(800);
+        primaryStage.setMinHeight(600);
+    }
+
+    private void setupInteractions() {
+        // Set up card activation callback for Present area
+        presentArea.setCandyActivationCallback(this::handleCardActivation);
+
+        // Set up end turn button callback
+        activeStash.setEndTurnCallback(this::handleEndTurn);
+    }
+
+    private void setupGameLoop() {
+        // Set up UI synchronization when game state changes
+        gameLoopManager.addStateUpdateListener(state -> {
+            uiSynchronizer.updateUI(state);
+            System.out.println("🔄 Game state updated: " + getGameStateInfo(state));
+        });
+
+        // Start the game
+        gameLoopManager.startGame();
+    }
+
+    private void handleCardActivation(InteractiveCardComponent cardComponent) {
+        Card card = cardComponent.getCard();
+        GameState currentState = gameLoopManager.getCurrentState();
+
+        if (currentState == null || currentState.gameEnd()) {
+            System.out.println("Cannot activate card: game not running or ended");
+            return;
+        }
+
+        // Get available abilities for this card
+        List<AbilitySpec> availableAbilities = abilityActivationManager.getAvailableAbilities(
+            card, currentState, new HashSet<>()
+        );
+
+        if (availableAbilities.isEmpty()) {
+            System.out.println("Card " + card.number() + " has no available abilities");
+            cardComponent.setCandyActivated(false);
+            return;
+        }
+
+        // For now, activate the primary ability (first in list)
+        AbilitySpec primaryAbility = availableAbilities.get(0);
+
+        System.out.println("🎯 Activating " + primaryAbility + " on card " + card.number());
+
+        boolean success = gameLoopManager.executeManualAbility(primaryAbility);
+
+        if (success) {
+            System.out.println("✅ Ability " + primaryAbility + " executed successfully");
+            // Visual feedback will be handled by UI synchronizer
+        } else {
+            System.out.println("❌ Failed to execute ability " + primaryAbility);
+            cardComponent.setCandyActivated(false);
+        }
+    }
+
+    private void handleEndTurn() {
+        System.out.println("🔚 End Turn button clicked");
+        gameLoopManager.endTurn();
+    }
+
+    /**
+     * Get readable info about current game state.
+     */
+    private String getGameStateInfo(GameState state) {
+        return String.format("Present: %d cards, Past: %d cards, Finished: %d cards, Candy: %d, Coffee: %d",
+            state.present().cards().size(),
+            state.past().cards().size(),
+            state.finishedPile().cards().size(),
+            state.activeStash().candy(),
+            state.activeStash().coffee());
+    }
+
+    public GameRootLayout getRootLayout() {
+        return rootLayout;
+    }
+
+    public DimensionService getDimensionService() {
+        return dimensionService;
+    }
+
+    public UIDecisionProvider getDecisionProvider() {
+        return decisionProvider;
+    }
+}

@@ -28,6 +28,38 @@ public record Card(int number, int abilitiesTriggered, int maxAbilities, boolean
     }
 
     /**
+     * Returns the number of ability uses remaining for this card this turn.
+     */
+    public int abilityUsesRemaining() {
+        return maxAbilities - abilitiesTriggered;
+    }
+
+    /**
+     * Returns whether this card can still trigger abilities this turn.
+     */
+    public boolean canTriggerAbility() {
+        return abilityUsesRemaining() > 0;
+    }
+
+    /**
+     * Creates a new card with one more ability triggered.
+     */
+    public Card withAbilityTriggered() {
+        if (!canTriggerAbility()) {
+            throw new IllegalStateException("Cannot trigger ability: no uses remaining");
+        }
+        return new Card(number, abilitiesTriggered + 1, maxAbilities, fromDrawStack);
+    }
+
+    /**
+     * Creates a new card with the ability triggers reset to 0.
+     * Typically used when moving to a new turn.
+     */
+    public Card withAbilitiesReset() {
+        return new Card(number, 0, maxAbilities, fromDrawStack);
+    }
+
+    /**
      * Convenience constructor that defaults fromDrawStack to true.
      * Used when creating cards that are known to come from the draw stack.
      */

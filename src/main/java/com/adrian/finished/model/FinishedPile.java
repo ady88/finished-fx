@@ -1,7 +1,5 @@
 package com.adrian.finished.model;
 
-import com.adrian.finished.model.Card;
-
 import java.util.List;
 import java.util.Objects;
 
