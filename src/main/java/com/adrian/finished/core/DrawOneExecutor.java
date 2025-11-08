@@ -40,21 +40,25 @@ public final class DrawOneExecutor implements AbilityExecutor {
             return s;
         }
 
-        // Find the first eligible provider automatically (no user input needed)
-        int providerIndex = -1;
-        for (int i = 0; i < presentCards.size(); i++) {
-            Card card = presentCards.get(i);
+        // Ensure there is at least one eligible provider
+        boolean hasProvider = false;
+        for (Card card : presentCards) {
             if (context.ability().cards().contains(card.number()) && card.abilitiesTriggered() < card.maxAbilities()) {
-                providerIndex = i;
-                break;
+                hasProvider = true; break;
             }
         }
-
-        if (providerIndex == -1) {
-            return s; // No eligible provider found
+        if (!hasProvider) {
+            return s;
         }
 
+        int providerIndex = context.provider().selectAbilityProviderCard(s, context.ability().cards());
+        if (providerIndex < 0 || providerIndex >= presentCards.size()) {
+            throw new IllegalStateException("Invalid ability provider index: " + providerIndex);
+        }
         Card providerCard = presentCards.get(providerIndex);
+        if (!context.ability().cards().contains(providerCard.number()) || providerCard.abilitiesTriggered() >= providerCard.maxAbilities()) {
+            throw new IllegalStateException("Selected card cannot provide this ability or has reached usage limit");
+        }
 
         // Spend candy and increment provider
         Stash newActiveStash = new Stash(s.activeStash().candy() - 1, s.activeStash().coffee());
@@ -79,5 +83,4 @@ public final class DrawOneExecutor implements AbilityExecutor {
                 s.activeAllCardsInFutureAreas()
         );
     }
-
 }

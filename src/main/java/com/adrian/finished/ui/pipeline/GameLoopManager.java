@@ -192,6 +192,11 @@ public class GameLoopManager {
                 }
 
                 // After manual abilities, check for TAKE_CANDY and SCORE_CARD
+                if (ability == AbilitySpec.EXCHANGE_PRESENT_CARD_ORDER) {
+                    System.out.println("✅ Manual ability executed successfully");
+                    return true;
+                }
+
                 currentState = executeAbility(AbilitySpec.TAKE_CANDY);
 
                 // Try to score cards after drawing new ones
@@ -243,6 +248,9 @@ public class GameLoopManager {
                 return false;
 
             case DRAW_ONE:
+                return false;
+
+            case CARDS_FROM_PAST:
                 return false;
 
             default:

@@ -1,5 +1,6 @@
 package com.adrian.finished.ui.pipeline;
 
+import com.adrian.finished.model.Card;
 import com.adrian.finished.model.GameState;
 import com.adrian.finished.model.abilities.DecisionProvider;
 import com.adrian.finished.ui.DimensionService;
@@ -24,6 +25,10 @@ public class UIDecisionProvider implements DecisionProvider {
 
     private final Pane rootPane;
     private final DimensionService dimensionService;
+
+    // Add this field to store the last clicked card index
+    private Integer preSelectedAbilityProviderIndex = null;
+
 
     // Store pre-selected indices for drag-and-drop operations
     private List<Integer> preSelectedCardIndices = null;
@@ -69,6 +74,25 @@ public class UIDecisionProvider implements DecisionProvider {
 
     @Override
     public int selectAbilityProviderCard(GameState state, List<Integer> validCardNumbers) {
+        // Check if we have a pre-selected provider (from card click)
+        if (preSelectedAbilityProviderIndex != null) {
+            int index = preSelectedAbilityProviderIndex;
+            preSelectedAbilityProviderIndex = null; // Clear after use
+
+            // Validate that the pre-selected card can actually provide this ability
+            if (index >= 0 && index < state.present().cards().size()) {
+                Card card = state.present().cards().get(index);
+                if (validCardNumbers.contains(card.number()) &&
+                        card.abilitiesTriggered() < card.maxAbilities()) {
+                    System.out.println("🎯 Using pre-selected ability provider index: " + index);
+                    return index;
+                }
+            }
+
+            System.out.println("⚠️ Pre-selected provider index " + index + " is invalid, showing overlay");
+            // Fall through to show overlay if pre-selected card is invalid
+        }
+
         if (validCardNumbers.isEmpty() || state.present().cards().isEmpty()) {
             return -1;
         }
@@ -84,6 +108,7 @@ public class UIDecisionProvider implements DecisionProvider {
         Integer result = executeDecisionOnFxThread(overlay);
         return result != null ? result : -1;
     }
+
 
     /**
      * Extended method for number selection (not in base DecisionProvider interface).
@@ -105,6 +130,16 @@ public class UIDecisionProvider implements DecisionProvider {
         Integer result = executeDecisionOnFxThread(overlay);
         return result != null ? result : min;
     }
+
+    /**
+     * Set the pre-selected ability provider card index for the next selectAbilityProviderCard call.
+     * This is used when the user has already selected a card by clicking on it.
+     */
+    public void setPreSelectedAbilityProviderIndex(Integer index) {
+        this.preSelectedAbilityProviderIndex = index;
+        System.out.println("🎯 Pre-selected ability provider index set: " + this.preSelectedAbilityProviderIndex);
+    }
+
 
     /**
      * Executes a decision overlay on the JavaFX Application Thread and blocks until complete.

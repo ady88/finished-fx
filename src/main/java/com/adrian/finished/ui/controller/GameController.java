@@ -174,9 +174,24 @@ public class GameController {
             return;
         }
 
+        // Find the index of this card in the present area
+        List<Card> presentCards = currentState.present().cards();
+        int cardIndex = -1;
+        for (int i = 0; i < presentCards.size(); i++) {
+            if (presentCards.get(i).equals(card)) {
+                cardIndex = i;
+                break;
+            }
+        }
+
+        if (cardIndex == -1) {
+            System.out.println("Card not found in present area");
+            return;
+        }
+
         // Get available abilities for this card
         List<AbilitySpec> availableAbilities = abilityActivationManager.getAvailableAbilities(
-            card, currentState, new HashSet<>()
+                card, currentState, new HashSet<>()
         );
 
         if (availableAbilities.isEmpty()) {
@@ -188,7 +203,10 @@ public class GameController {
         // For now, activate the primary ability (first in list)
         AbilitySpec primaryAbility = availableAbilities.get(0);
 
-        System.out.println("🎯 Activating " + primaryAbility + " on card " + card.number());
+        System.out.println("🎯 Activating " + primaryAbility + " on card " + card.number() + " at index " + cardIndex);
+
+        // Pre-select this card as the ability provider
+        decisionProvider.setPreSelectedAbilityProviderIndex(cardIndex);
 
         boolean success = gameLoopManager.executeManualAbility(primaryAbility);
 
@@ -198,8 +216,11 @@ public class GameController {
         } else {
             System.out.println("❌ Failed to execute ability " + primaryAbility);
             cardComponent.setCandyActivated(false);
+            // Clear pre-selected provider if the ability failed
+            decisionProvider.setPreSelectedAbilityProviderIndex(null);
         }
     }
+
 
     private void handleEndTurn() {
         System.out.println("🔚 End Turn button clicked");
