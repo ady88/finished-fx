@@ -1,7 +1,7 @@
 package com.adrian.finished.ui.pipeline;
 
 import com.adrian.finished.core.*;
-import com.adrian.finished.model.GameState;
+import com.adrian.finished.model.*;
 import com.adrian.finished.model.abilities.*;
 import java.util.*;
 import java.util.function.Consumer;
@@ -10,7 +10,7 @@ import java.util.function.Consumer;
  * Manages the complete game loop as described in ability-system-analysis.md.
  * Executes abilities in the correct order and handles transitions between
  * automatic abilities and user input phases.
- *
+ * <p>
  * Game Loop Sequence:
  * 1. BEGIN_TURN (order 0)
  * 2. TAKE_CANDY (order 1) - if applicable cards present
@@ -54,6 +54,7 @@ public class GameLoopManager {
 
         // Execute BEGIN_GAME ability
         AbilityContext beginGameContext = new AbilityContext(initialState, AbilitySpec.BEGIN_GAME, decisionProvider);
+        System.out.println("ADRIAN 1");
         currentState = executors.get(AbilitySpec.BEGIN_GAME).apply(beginGameContext);
 
         gameRunning = true;
@@ -76,14 +77,15 @@ public class GameLoopManager {
         try {
             // Clear used abilities at start of new turn
             usedManualAbilities.clear();
-
+            System.out.println("ADRIAN 5");
+            System.out.println(currentState.gameEnd());
             // 1. BEGIN_TURN (order 0)
             currentState = executeAbility(AbilitySpec.BEGIN_TURN);
-            if (currentState.gameEnd()) return;
+//            if (currentState.gameEnd()) return;
 
             // 2. TAKE_CANDY (order 1) - if applicable cards present
             currentState = executeAbility(AbilitySpec.TAKE_CANDY);
-            if (currentState.gameEnd()) return;
+//            if (currentState.gameEnd()) return;
 
             // 3. SCORE_CARD (order 2) - if scoreable cards present (loop until no more scoring)
             boolean scored;
@@ -171,7 +173,8 @@ public class GameLoopManager {
             return false;
         }
 
-        if (usedManualAbilities.contains(ability)) {
+        // Only check if ability was used for abilities that should be limited per turn
+        if (shouldTrackAbilityUsage(ability) && usedManualAbilities.contains(ability)) {
             System.out.println("❌ " + ability + " has already been used this turn");
             return false;
         }
@@ -183,7 +186,10 @@ public class GameLoopManager {
             currentState = executeAbility(ability);
 
             if (!currentState.equals(beforeAbility)) {
-                usedManualAbilities.add(ability);
+                // Only track abilities that should be limited per turn
+                if (shouldTrackAbilityUsage(ability)) {
+                    usedManualAbilities.add(ability);
+                }
 
                 // After manual abilities, check for TAKE_CANDY and SCORE_CARD
                 currentState = executeAbility(AbilitySpec.TAKE_CANDY);
@@ -222,6 +228,32 @@ public class GameLoopManager {
     }
 
     /**
+     * Determine if an ability should be tracked for per-turn usage limits.
+     * Some abilities like EXCHANGE_PRESENT_CARD_ORDER can be used multiple times per turn.
+     */
+    private boolean shouldTrackAbilityUsage(AbilitySpec ability) {
+        switch (ability) {
+            case EXCHANGE_PRESENT_CARD_ORDER:
+                // This ability can be used multiple times per turn - don't track usage
+                return false;
+
+            // Special case: DRAW_ONE_3X can be used up to 3 times, but needs special handling
+            case DRAW_ONE_3X:
+                // This needs special per-card tracking, not global turn tracking
+                return false;
+
+            case DRAW_ONE:
+                return false;
+
+            default:
+                // Most abilities are limited to once per turn
+                return true;
+        }
+    }
+
+
+
+    /**
      * Execute a specific ability and update state.
      */
     private GameState executeAbility(AbilitySpec ability) {
@@ -234,13 +266,18 @@ public class GameLoopManager {
         AbilityContext context = new AbilityContext(currentState, ability, decisionProvider);
         GameState newState = executor.apply(context);
 
+        System.out.println("ADRIAN 6");
         if (!newState.equals(currentState)) {
+            System.out.println("ADRINA 7");
             System.out.println("🔄 " + ability + " executed - state updated");
-            notifyStateUpdate();
+            currentState = newState; // Update the field BEFORE notifying
+
+            notifyStateUpdate(); // Now this uses the correct updated state
         }
 
         return newState;
     }
+
 
     /**
      * Check if an ability is a manual ability that requires user activation.
@@ -274,13 +311,13 @@ public class GameLoopManager {
      */
     private GameState createInitialGameState() {
         return new GameState(
-            new com.adrian.finished.model.Stash(0, 5), // activeStash - start with 5 coffee, no candy
-            new com.adrian.finished.model.Stash(10, 0), // reservedStash - 10 candy available
-            new com.adrian.finished.model.DrawStack(new ArrayDeque<>()), // empty initially
-            new com.adrian.finished.model.PresentArea(List.of()),
-            new com.adrian.finished.model.PastArea(new ArrayDeque<>()),
+            new Stash(0, 5), // activeStash - start with 5 coffee, no candy
+            new Stash(10, 0), // reservedStash - 10 candy available
+            new DrawStack(new ArrayDeque<>()), // empty initially
+            new PresentArea(List.of()),
+            new PastArea(new ArrayDeque<>()),
             List.of(), // futureAreas
-            new com.adrian.finished.model.FinishedPile(List.of()),
+            new FinishedPile(List.of()),
             0, // activeAllCardsInFutureAreas
             false // gameEnd
         );

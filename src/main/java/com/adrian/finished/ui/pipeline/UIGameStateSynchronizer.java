@@ -38,7 +38,7 @@ public class UIGameStateSynchronizer {
             Platform.runLater(() -> updateUI(state));
             return;
         }
-
+        System.out.println("ADRIAN 11000");
         try {
             // Update Present Area
             updatePresentArea(state);
@@ -86,14 +86,16 @@ public class UIGameStateSynchronizer {
         Deque<Card> pastCards = state.past().cards();
 
         if (!pastCards.isEmpty()) {
-            // Show the most recent card (last in the list)
-            Card mostRecentCard = pastCards.getLast();
-            pastArea.setPastCard(mostRecentCard);
-            System.out.println("📚 Past area updated: " + pastCards.size() + " cards, showing card " + mostRecentCard.number());
+            // Convert Deque to List and show all past cards (PastAreaLayout will handle showing max 3)
+            List<Card> pastCardsList = List.copyOf(pastCards);
+            pastArea.setPastCards(pastCardsList);
+            System.out.println("📚 Past area updated: " + pastCards.size() + " cards total, showing up to 3 most recent");
         } else {
-            pastArea.setPastCard(null);
+            pastArea.setPastCards(List.of()); // Empty list
+            System.out.println("📚 Past area cleared - no cards");
         }
     }
+
 
     /**
      * Update future areas with current cards.

@@ -1,6 +1,7 @@
 package com.adrian.finished.ui.pipeline;
 
 import javafx.scene.layout.StackPane;
+import java.util.function.Consumer;
 
 /**
  * Base interface for decision overlay components that collect user input
@@ -14,6 +15,9 @@ public abstract class DecisionOverlay<T> extends StackPane {
     protected volatile T result;
     protected volatile boolean decisionMade = false;
     protected final Object lock = new Object();
+
+    // Add callback support for async operation
+    private Consumer<T> onDecisionCompleteCallback;
 
     /**
      * Blocks the calling thread until the user makes a decision.
@@ -34,6 +38,13 @@ public abstract class DecisionOverlay<T> extends StackPane {
     }
 
     /**
+     * Set a callback to be notified when decision is complete (for async operation).
+     */
+    public void setOnDecisionComplete(Consumer<T> callback) {
+        this.onDecisionCompleteCallback = callback;
+    }
+
+    /**
      * Called by UI handlers when a decision is made.
      * Wakes up any threads waiting for the decision.
      */
@@ -42,6 +53,11 @@ public abstract class DecisionOverlay<T> extends StackPane {
             this.result = result;
             this.decisionMade = true;
             lock.notifyAll();
+        }
+
+        // Notify async callback if set
+        if (onDecisionCompleteCallback != null) {
+            onDecisionCompleteCallback.accept(result);
         }
     }
 

@@ -11,6 +11,7 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.scene.layout.Pane;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -26,6 +27,9 @@ public class UIDecisionProvider implements DecisionProvider {
     private final Pane rootPane;
     private final DimensionService dimensionService;
 
+    // Store pre-selected indices for drag-and-drop operations
+    private List<Integer> preSelectedCardIndices = null;
+
     public UIDecisionProvider(Pane rootPane, DimensionService dimensionService) {
         this.rootPane = rootPane;
         this.dimensionService = dimensionService;
@@ -33,19 +37,36 @@ public class UIDecisionProvider implements DecisionProvider {
 
     @Override
     public List<Integer> selectPresentCardIndices(GameState state, int count) {
+        // Check if we have pre-selected indices (from drag-and-drop)
+        if (preSelectedCardIndices != null && preSelectedCardIndices.size() == count) {
+            List<Integer> result = new ArrayList<>(preSelectedCardIndices);
+            preSelectedCardIndices = null; // Clear after use
+            System.out.println("🎯 Using pre-selected card indices: " + result);
+            return result;
+        }
+
         if (count <= 0 || state.present().cards().isEmpty()) {
             return List.of();
         }
 
         // Create decision overlay for card selection
         CardSelectionDecisionOverlay overlay = new CardSelectionDecisionOverlay(
-            dimensionService,
-            state.present().cards(),
-            count,
-            "Select " + count + " card" + (count > 1 ? "s" : "") + " from your present area:"
+                dimensionService,
+                state.present().cards(),
+                count,
+                "Select " + count + " card" + (count > 1 ? "s" : "") + " from your present area:"
         );
 
         return executeDecisionOnFxThread(overlay);
+    }
+
+    /**
+     * Set pre-selected card indices for the next selectPresentCardIndices call.
+     * This is used for drag-and-drop operations where the user has already made the selection.
+     */
+    public void setPreSelectedCardIndices(List<Integer> indices) {
+        this.preSelectedCardIndices = indices != null ? new ArrayList<>(indices) : null;
+        System.out.println("🎯 Pre-selected card indices set: " + this.preSelectedCardIndices);
     }
 
     @Override
@@ -56,10 +77,10 @@ public class UIDecisionProvider implements DecisionProvider {
 
         // Create decision overlay for ability provider selection
         AbilityProviderDecisionOverlay overlay = new AbilityProviderDecisionOverlay(
-            dimensionService,
-            state.present().cards(),
-            validCardNumbers,
-            "Select a card to activate its ability:"
+                dimensionService,
+                state.present().cards(),
+                validCardNumbers,
+                "Select a card to activate its ability:"
         );
 
         Integer result = executeDecisionOnFxThread(overlay);
@@ -77,10 +98,10 @@ public class UIDecisionProvider implements DecisionProvider {
 
         // Create decision overlay for number selection
         NumberSelectionDecisionOverlay overlay = new NumberSelectionDecisionOverlay(
-            dimensionService,
-            min,
-            max,
-            prompt
+                dimensionService,
+                min,
+                max,
+                prompt
         );
 
         Integer result = executeDecisionOnFxThread(overlay);
@@ -93,7 +114,23 @@ public class UIDecisionProvider implements DecisionProvider {
      */
     private <T> T executeDecisionOnFxThread(DecisionOverlay<T> overlay) {
         if (Platform.isFxApplicationThread()) {
-            return executeDecisionOverlay(overlay);
+            // We're already on the FX thread - we need to avoid blocking it
+            // For automatic abilities like DRAW_ONE, return immediately with a default result
+            // For interactive abilities, we need to restructure this
+            CompletableFuture<T> future = new CompletableFuture<>();
+
+            // Add overlay to root pane
+            rootPane.getChildren().add(overlay);
+
+            // Set up a listener for when the decision is made
+            overlay.setOnDecisionComplete(result -> {
+                rootPane.getChildren().remove(overlay);
+                future.complete(result);
+            });
+
+            // For now, return null to indicate no immediate result
+            // This will require changes to how abilities handle decision provider responses
+            return null;
         } else {
             CompletableFuture<T> future = new CompletableFuture<>();
             Platform.runLater(() -> {
@@ -112,6 +149,8 @@ public class UIDecisionProvider implements DecisionProvider {
             }
         }
     }
+
+
 
     /**
      * Shows the decision overlay and blocks until user makes a decision.

@@ -24,14 +24,18 @@ public final class BeginTurnExecutor implements AbilityExecutor {
 
     @Override
     public GameState apply(AbilityContext context) {
+        System.out.println("ADRIAN 2");
         if (context.ability() != AbilitySpec.BEGIN_TURN) {
             throw new IllegalArgumentException("BeginTurnExecutor can only execute BEGIN_TURN ability");
         }
+        System.out.println("ADRIAN 3");
         Objects.requireNonNull(context.state(), "state");
 
         GameState s = context.state();
 
+        System.out.println("ADRIAN 3");
         int counter = s.activeAllCardsInFutureAreas();
+        System.out.println("ADRIAN 3");
         PresentArea newPresent;
         List<FutureArea> newFutures;
         int newCounter;
@@ -45,6 +49,8 @@ public final class BeginTurnExecutor implements AbilityExecutor {
             newFutures = List.copyOf(s.futureAreas().subList(1, s.futureAreas().size()));
             newCounter = counter - 1;
         } else {
+            System.out.println("ADRIAN 4");
+            System.out.println(s.drawStack().cards().size());
             // Draw up to 3 cards from the draw stack
             Deque<Card> source = new ArrayDeque<>(s.drawStack().cards());
             List<Card> drawn = new ArrayList<>(3);

@@ -87,8 +87,71 @@ public class GameController {
         // Set up card activation callback for Present area
         presentArea.setCandyActivationCallback(this::handleCardActivation);
 
+        // Set up card swap callback for Present area drag-and-drop
+        presentArea.setCardSwapCallback(this::handleCardSwap);
+
         // Set up end turn button callback
         activeStash.setEndTurnCallback(this::handleEndTurn);
+    }
+
+    private void handleCardSwap(InteractiveCardComponent sourceCard, InteractiveCardComponent targetCard) {
+        GameState currentState = gameLoopManager.getCurrentState();
+
+        if (currentState == null || currentState.gameEnd()) {
+            System.out.println("Cannot swap cards: game not running or ended");
+            return;
+        }
+
+        // Check if EXCHANGE_PRESENT_CARD_ORDER is available
+        boolean canSwap = abilityActivationManager.canActivateAbility(
+                sourceCard.getCard(),
+                AbilitySpec.EXCHANGE_PRESENT_CARD_ORDER,
+                currentState,
+                new HashSet<>()
+        );
+
+        if (!canSwap) {
+            System.out.println("Cannot swap cards: EXCHANGE_PRESENT_CARD_ORDER not available");
+            return;
+        }
+
+        // Find the indices of the source and target cards in the present area
+        List<Card> presentCards = currentState.present().cards();
+        int sourceIndex = -1;
+        int targetIndex = -1;
+
+        for (int i = 0; i < presentCards.size(); i++) {
+            Card presentCard = presentCards.get(i);
+            if (presentCard.equals(sourceCard.getCard())) {
+                sourceIndex = i;
+            }
+            if (presentCard.equals(targetCard.getCard())) {
+                targetIndex = i;
+            }
+        }
+
+        if (sourceIndex == -1 || targetIndex == -1) {
+            System.out.println("❌ Could not find card indices for swap");
+            return;
+        }
+
+        System.out.println("🔄 Swapping cards " + sourceCard.getCard().number() + " and " + targetCard.getCard().number()
+                + " at indices " + sourceIndex + " and " + targetIndex);
+
+        // Pre-select the card indices for the decision provider
+        decisionProvider.setPreSelectedCardIndices(List.of(sourceIndex, targetIndex));
+
+        // Execute the swap through the game loop
+        boolean success = gameLoopManager.executeManualAbility(AbilitySpec.EXCHANGE_PRESENT_CARD_ORDER);
+
+        if (success) {
+            System.out.println("✅ Card swap executed successfully");
+            // UI will be updated automatically via notifyStateUpdate
+        } else {
+            System.out.println("❌ Failed to execute card swap");
+            // Clear pre-selected indices if the ability failed
+            decisionProvider.setPreSelectedCardIndices(null);
+        }
     }
 
     private void setupGameLoop() {

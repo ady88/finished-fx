@@ -13,7 +13,7 @@
         <maven.compiler.target>24</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <javafx.version>24</javafx.version>
-        <jpro.version>2025.2.1</jpro.version>
+        <jpro.version>2025.3.1</jpro.version>
     </properties>
 
     <pluginRepositories>
@@ -37,6 +37,20 @@
             <version>${javafx.version}</version>
             <scope>compile</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-swing</artifactId>
+            <version>${javafx.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
+            <dependency>
+                <groupId>one.jpro.platform</groupId>
+                <artifactId>jpro-utils</artifactId>
+                <version>0.5.7</version>
+            </dependency>
+
 
         <!-- Ikonli core JavaFX support -->
         <dependency>
@@ -74,6 +88,12 @@
                         <version>${jpro.version}</version>
                         <configuration>
                             <mainClassName>com.adrian.FinishedFxApp</mainClassName>
+                            <noRenderJobs>false</noRenderJobs>
+                            <additionalProperties>
+                                <jpro.enableSnapshots>true</jpro.enableSnapshots>
+                                <jpro.enableAdvancedGraphics>true</jpro.enableAdvancedGraphics>
+                            </additionalProperties>
+
                         </configuration>
                     </plugin>
                 </plugins>
@@ -103,9 +123,15 @@
                     <compress>2</compress>
                     <noHeaderFiles>true</noHeaderFiles>
                     <noManPages>true</noManPages>
+
                     <launcher>finishedfx</launcher>
                     <jlinkImageName>finishedfx</jlinkImageName>
                     <jlinkZipName>finishedfx</jlinkZipName>
+                    <options>
+                        <option>-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=localhost:5005</option>
+                    </options>
+
+
                 </configuration>
             </plugin>
 

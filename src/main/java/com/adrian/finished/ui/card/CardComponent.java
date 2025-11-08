@@ -16,7 +16,7 @@ import javafx.scene.layout.StackPane;
  */
 public class CardComponent extends StackPane {
 
-    private final DimensionService dimensionService;
+    protected final DimensionService dimensionService;
     private final ObjectProperty<Card> card = new SimpleObjectProperty<>();
     private final BooleanProperty candyActivated = new SimpleBooleanProperty(false);
     private final BooleanProperty smallVariant = new SimpleBooleanProperty(false);

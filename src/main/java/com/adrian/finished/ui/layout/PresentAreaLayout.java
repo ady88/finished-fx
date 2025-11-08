@@ -25,11 +25,26 @@ public class PresentAreaLayout extends Region {
     private final HBox contentArea;
     private CandyActivationCallback candyActivationCallback;
     private final List<InteractiveCardComponent> cardComponents = new ArrayList<>();
+    private CardSwapCallback cardSwapCallback;
+
 
     @FunctionalInterface
     public interface CandyActivationCallback {
         void onCandyActivation(InteractiveCardComponent cardComponent);
     }
+
+    // Add this interface (if not already present)
+    @FunctionalInterface
+    public interface CardSwapCallback {
+        void onCardSwap(InteractiveCardComponent sourceCard, InteractiveCardComponent targetCard);
+    }
+
+    // Add this setter method
+    public void setCardSwapCallback(CardSwapCallback callback) {
+        this.cardSwapCallback = callback;
+    }
+
+
 
     public PresentAreaLayout(DimensionService dimensionService) {
         super();
@@ -98,14 +113,18 @@ public class PresentAreaLayout extends Region {
 
     private InteractiveCardComponent createInteractiveCard(Card card) {
         InteractiveCardComponent cardComponent = new InteractiveCardComponent(
-            dimensionService,
-            card
+                dimensionService,
+                card
         );
+
+        // Set candy activated visual state based on whether the card has used abilities
+        boolean hasUsedAbilities = card.abilitiesTriggered() > 0;
+        cardComponent.setCandyActivated(hasUsedAbilities);
 
         // Set up candy activation handling
         if (candyActivationCallback != null) {
             cardComponent.setOnCandyActivation(() ->
-                candyActivationCallback.onCandyActivation(cardComponent)
+                    candyActivationCallback.onCandyActivation(cardComponent)
             );
         }
 
@@ -115,6 +134,8 @@ public class PresentAreaLayout extends Region {
         return cardComponent;
     }
 
+
+    // Modify the existing handleCardSwap method
     private void handleCardSwap(InteractiveCardComponent sourceCard, InteractiveCardComponent targetCard) {
         // Find indices of the cards
         int sourceIndex = cardComponents.indexOf(sourceCard);
@@ -124,14 +145,29 @@ public class PresentAreaLayout extends Region {
             return; // Invalid swap
         }
 
+        System.out.println("UI: Attempting to swap cards at positions " + sourceIndex + " and " + targetIndex);
+
+        // First, notify the game controller to execute the ability
+        if (cardSwapCallback != null) {
+            cardSwapCallback.onCardSwap(sourceCard, targetCard);
+        } else {
+            // Fallback: perform UI-only swap if no game loop integration
+            System.out.println("No card swap callback set - performing UI-only swap");
+            performUISwap(sourceIndex, targetIndex);
+        }
+    }
+
+    private void performUISwap(int sourceIndex, int targetIndex) {
         // Swap in the card components list
         Collections.swap(cardComponents, sourceIndex, targetIndex);
 
         // Update the visual layout
         updateVisualLayout();
 
-        System.out.println("Swapped cards at positions " + sourceIndex + " and " + targetIndex);
+        System.out.println("UI: Swapped cards at positions " + sourceIndex + " and " + targetIndex);
     }
+
+
 
     private void updateVisualLayout() {
         // Clear and re-add all cards in the new order

@@ -39,8 +39,8 @@ public class AbilityActivationManager {
             return false;
         }
 
-        // Check if card has required candy (abilities with requiresCandy = true need candy)
-        if (ability.requiresCandy() && card.abilitiesTriggered() <= 0) {
+        // Check if card still has ability uses remaining
+        if (ability.requiresCandy() && !card.canTriggerAbility()) {
             return false;
         }
 
