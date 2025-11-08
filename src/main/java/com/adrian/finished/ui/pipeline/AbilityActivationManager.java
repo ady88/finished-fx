@@ -55,22 +55,18 @@ public class AbilityActivationManager {
         }
 
         // Specific ability checks
-        switch (ability) {
-            case CARDS_FROM_PAST:
+        return switch (ability) {
+            case CARDS_FROM_PAST ->
                 // Need at least 2 cards in past
-                return state.past().cards().size() >= 2;
-
-            case EXCHANGE_PRESENT_CARD_ORDER:
+                    state.past().cards().size() >= 2;
+            case EXCHANGE_PRESENT_CARD_ORDER ->
                 // Need at least 2 cards in present
-                return state.present().cards().size() >= 2;
-
-            case CARDS_INTO_PAST:
+                    state.present().cards().size() >= 2;
+            case CARDS_INTO_PAST ->
                 // Need at least 2 cards in present
-                return state.present().cards().size() >= 2;
-
-            default:
-                return true;
-        }
+                    state.present().cards().size() >= 2;
+            default -> true;
+        };
     }
 
     /**
