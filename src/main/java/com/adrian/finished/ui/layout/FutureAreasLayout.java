@@ -7,6 +7,7 @@ import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
@@ -19,7 +20,7 @@ import java.util.List;
 public class FutureAreasLayout extends Region {
 
     private final DimensionService dimensionService;
-    private final VBox contentArea;
+    private final HBox contentArea;
 
     public FutureAreasLayout(DimensionService dimensionService) {
         super();
@@ -29,7 +30,7 @@ public class FutureAreasLayout extends Region {
         getStyleClass().add("future-areas-background");
 
         // Create content area
-        this.contentArea = new VBox();
+        this.contentArea = new HBox();
         contentArea.setAlignment(Pos.TOP_CENTER);
         contentArea.spacingProperty().bind(dimensionService.gapSmallProperty());
         contentArea.paddingProperty().bind(Bindings.createObjectBinding(
@@ -66,7 +67,7 @@ public class FutureAreasLayout extends Region {
         }
     }
 
-    public void setFutureCards(List<Card> cards) {
+    public void setFutureCards(List<Card> cards, int totalFutureAreas) {
         contentArea.getChildren().clear();
 
         if (cards == null || cards.isEmpty()) {
@@ -80,9 +81,9 @@ public class FutureAreasLayout extends Region {
         int maxVisibleCards = calculateMaxVisibleCards();
         int cardsToShow = Math.min(cards.size(), maxVisibleCards);
 
-        // Add overflow indicator if needed
-        if (cards.size() > maxVisibleCards) {
-            Label indicator = new Label("+" + (cards.size() - maxVisibleCards) + " more");
+        // Add overflow indicator for future areas if needed
+        if (totalFutureAreas > 1) {
+            Label indicator = new Label("+" + (totalFutureAreas - 1) + " more future areas");
             indicator.getStyleClass().add("future-overflow-indicator");
             contentArea.getChildren().add(indicator);
         }
@@ -90,22 +91,23 @@ public class FutureAreasLayout extends Region {
         // Add visible cards
         for (int i = 0; i < cardsToShow; i++) {
             CardComponent cardComponent = new CardComponent(
-                dimensionService,
-                cards.get(i),
-                true  // Future cards use small variant as per milestone_2.md
+                    dimensionService,
+                    cards.get(i),
+                    true  // Future cards use small variant as per milestone_2.md
             );
             contentArea.getChildren().add(cardComponent);
         }
     }
 
+
     private int calculateMaxVisibleCards() {
         // Calculate how many cards can fit vertically without scrolling
         // This would be based on available height and card height
         // For now, return a reasonable default
-        return 3;
+        return 20;
     }
 
-    public VBox getContentArea() {
+    public HBox getContentArea() {
         return contentArea;
     }
 }

@@ -92,12 +92,16 @@ public class CardComponent extends StackPane {
             return;
         }
 
-        String imagePath = buildImagePath(currentCard.number(), candyActivated.get(), smallVariant.get());
+        // Use the Card model's abilitiesTriggered to determine if candy is activated
+        // This ensures that cards moved to future areas retain their candy activation state
+        boolean shouldShowCandy = currentCard.abilitiesTriggered() > 0 || candyActivated.get();
+
+        String imagePath = buildImagePath(currentCard.number(), shouldShowCandy, smallVariant.get());
         try {
             Image image = new Image(getClass().getResourceAsStream(imagePath));
             if (image.isError()) {
                 // Fallback to normal variant if candy version doesn't exist
-                if (candyActivated.get()) {
+                if (shouldShowCandy) {
                     String fallbackPath = buildImagePath(currentCard.number(), false, smallVariant.get());
                     image = new Image(getClass().getResourceAsStream(fallbackPath));
                 }
@@ -111,7 +115,16 @@ public class CardComponent extends StackPane {
 
     private String buildImagePath(int cardNumber, boolean candyState, boolean small) {
         String basePath = "/assets/cards/";
-        String suffix = small ? "_card_small.png" : (candyState ? "_cardc.png" : "_card.png");
+        String suffix;
+
+        if (small) {
+            // Small variant - check if candy activated
+            suffix = candyState ? "_cardc_small.png" : "_card_small.png";
+        } else {
+            // Normal variant - check if candy activated
+            suffix = candyState ? "_cardc.png" : "_card.png";
+        }
+
         return basePath + cardNumber + suffix;
     }
 

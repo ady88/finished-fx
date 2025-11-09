@@ -15,7 +15,6 @@ import java.util.*;
  * - Spend 1 candy and increment that card's abilitiesTriggered count
  * - Reset abilitiesTriggered to 0 for ALL present cards and return those candies to reserved stash
  * - Place all present cards under the draw pile in order and clear present area
- * - The END_TURN_END ability will be called next via the ability chain to handle past area cleanup
  */
 public final class BelowTheStackExecutor implements AbilityExecutor {
 

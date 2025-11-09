@@ -173,8 +173,7 @@ public class GameLoopManager {
             return false;
         }
 
-        // Only check if ability was used for abilities that should be limited per turn
-        if (shouldTrackAbilityUsage(ability) && usedManualAbilities.contains(ability)) {
+        if (usedManualAbilities.contains(ability)) {
             System.out.println("❌ " + ability + " has already been used this turn");
             return false;
         }
@@ -186,12 +185,22 @@ public class GameLoopManager {
             currentState = executeAbility(ability);
 
             if (!currentState.equals(beforeAbility)) {
-                // Only track abilities that should be limited per turn
-                if (shouldTrackAbilityUsage(ability)) {
-                    usedManualAbilities.add(ability);
+                // Special handling for BELOW_THE_STACK - it should trigger immediate end turn sequence
+                if (ability == AbilitySpec.BELOW_THE_STACK) {
+                    System.out.println("🔄 BELOW_THE_STACK executed - triggering immediate end turn sequence");
+
+                    // Execute END_TURN_END directly (skipping the normal end turn phases)
+                    currentState = executeAbility(AbilitySpec.END_TURN_END);
+                    if (currentState.gameEnd()) return true;
+
+                    System.out.println("✅ Turn ended via BELOW_THE_STACK, starting next turn...");
+
+                    // Start next turn immediately
+                    executeGameLoop();
+                    return true;
                 }
 
-                // After manual abilities, check for TAKE_CANDY and SCORE_CARD
+                // After other manual abilities, check for TAKE_CANDY and SCORE_CARD
                 if (ability == AbilitySpec.EXCHANGE_PRESENT_CARD_ORDER) {
                     System.out.println("✅ Manual ability executed successfully");
                     return true;
@@ -352,6 +361,7 @@ public class GameLoopManager {
         // Manual abilities
         map.put(AbilitySpec.DRAW_TWO, new DrawTwoExecutor());
         map.put(AbilitySpec.CARDS_INTO_PAST, new CardsIntoPastExecutor());
+        map.put(AbilitySpec.ALL_CARDS_INTO_FUTURE, new AllCardsIntoFutureExecutor());
         map.put(AbilitySpec.DRAW_ONE, new DrawOneExecutor());
         map.put(AbilitySpec.DRAW_ONE_3X, new DrawOne3xExecutor());
         map.put(AbilitySpec.EXCHANGE_CARD, new ExchangeCardExecutor());
@@ -359,6 +369,7 @@ public class GameLoopManager {
         map.put(AbilitySpec.CARD_INTO_FUTURE, new CardIntoFutureExecutor());
         map.put(AbilitySpec.EXCHANGE_PRESENT_CARD_ORDER, new ExchangePresentCardOrderExecutor());
         map.put(AbilitySpec.RESET_CANDIES, new ResetCandiesExecutor());
+        map.put(AbilitySpec.BELOW_THE_STACK, new BelowTheStackExecutor());
 
         return map;
     }

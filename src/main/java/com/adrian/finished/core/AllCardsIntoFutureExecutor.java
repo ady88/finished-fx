@@ -14,7 +14,9 @@ import java.util.*;
  * - Player selects a card that provides this ability and can still be used this turn; spend 1 candy
  *   and increment that card's abilitiesTriggered count.
  * - If this is the first activation (counter == 0): move ALL present cards into a new first future area,
- *   mark them as fromDrawStack=false, clear present, increment activeAllCardsInFutureAreas by 1.
+ *   mark them as fromDrawStack=false, clear present, increment activeAllCardsInFutureAreas by 1,
+ *   and immediately draw up to 3 cards to the present area from the draw stack (or, if empty, from past),
+ *   marking cards drawn from past with fromDrawStack=false.
  * - If this ability was already active (counter > 0): push the existing first future area deeper (becomes second),
  *   place ALL current present cards into the now-first future area (mark fromDrawStack=false), increment counter,
  *   and immediately draw up to 3 cards to the present area from the draw stack (or, if empty, from past),
@@ -80,10 +82,15 @@ public final class AllCardsIntoFutureExecutor implements AbilityExecutor {
         }
 
         if (counter == 0) {
-            // First activation: move present to new future, clear present
+            // First activation: move present to new future, clear present, then draw up to 3 cards for present
             newFutures.add(new FutureArea(List.copyOf(toFuture)));
             newFutures.addAll(s.futureAreas());
-            newPresentArea = new PresentArea(List.of());
+
+            // Use DrawHelpers to draw up to 3 cards for the present area
+            DrawHelpers.Result drawResult = DrawHelpers.drawUpTo(3, s.drawStack(), s.past());
+            newPresentArea = new PresentArea(List.copyOf(drawResult.drawn));
+            newDrawStack = drawResult.newDraw;
+            newPastArea = drawResult.newPast;
         } else {
             // Already have future areas active: shift first deeper and place present into first future area
             // First, the new first future area is the current present (toFuture)
@@ -91,24 +98,13 @@ public final class AllCardsIntoFutureExecutor implements AbilityExecutor {
             // Then all existing future areas follow as-is (first becomes second, etc.)
             newFutures.addAll(s.futureAreas());
 
-            // Draw up to 3 cards for present area now
-            Deque<Card> draw = new ArrayDeque<>(s.drawStack().cards());
-            Deque<Card> past = new ArrayDeque<>(s.past().cards());
-            List<Card> drawn = new ArrayList<>(3);
-            for (int i = 0; i < 3; i++) {
-                Card next = null;
-                if (!draw.isEmpty()) {
-                    next = draw.removeFirst(); // from drawStack: keep fromDrawStack=true
-                } else if (!past.isEmpty()) {
-                    Card fromPast = past.removeFirst();
-                    next = new Card(fromPast.number(), fromPast.abilitiesTriggered(), fromPast.maxAbilities(), false);
-                }
-                if (next != null) drawn.add(next);
-            }
-            newPresentArea = new PresentArea(List.copyOf(drawn));
-            newDrawStack = new DrawStack(draw);
-            newPastArea = new PastArea(past);
+            // Draw up to 3 cards for present area using DrawHelpers
+            DrawHelpers.Result drawResult = DrawHelpers.drawUpTo(3, s.drawStack(), s.past());
+            newPresentArea = new PresentArea(List.copyOf(drawResult.drawn));
+            newDrawStack = drawResult.newDraw;
+            newPastArea = drawResult.newPast;
         }
+
 
         int newCounter = counter + 1;
 

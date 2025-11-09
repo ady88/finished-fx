@@ -3,6 +3,8 @@ package com.adrian.finished.ui.pipeline;
 import com.adrian.finished.model.Card;
 import com.adrian.finished.model.GameState;
 import com.adrian.finished.ui.layout.*;
+
+import java.util.ArrayList;
 import java.util.Deque;
 import javafx.application.Platform;
 import java.util.List;
@@ -101,17 +103,31 @@ public class UIGameStateSynchronizer {
      * Update future areas with current cards.
      */
     private void updateFutureAreas(GameState state) {
-        if (!state.futureAreas().isEmpty()) {
-            // Show the first future area if any exist
-            var firstFutureArea = state.futureAreas().get(0);
-            if (!firstFutureArea.cards().isEmpty()) {
-                Card futureCard = firstFutureArea.cards().get(0);
-                futureAreas.setFutureCard(futureCard);
-                System.out.println("🔮 Future areas updated: showing card " + futureCard.number());
-            }
-        } else {
+        List<com.adrian.finished.model.FutureArea> futureAreasList = state.futureAreas();
+
+        if (futureAreasList.isEmpty()) {
+            // No future areas - clear the display
             futureAreas.setFutureCard(null);
+            System.out.println("🔮 Future areas cleared - no future areas");
+            return;
         }
+
+        // Get cards from the most recent future area (last in the list)
+        com.adrian.finished.model.FutureArea mostRecentFutureArea = futureAreasList.getFirst();
+        List<Card> mostRecentCards = mostRecentFutureArea.cards();
+
+        if (mostRecentCards.isEmpty()) {
+            // Future areas exist but the most recent contains no cards
+            futureAreas.setFutureCard(null);
+            System.out.println("🔮 Future areas cleared - most recent area contains no cards");
+            return;
+        }
+
+        // Update the UI with cards from the most recent future area and total area count
+        futureAreas.setFutureCards(mostRecentCards, futureAreasList.size());
+        System.out.println("🔮 Future areas updated: showing " + mostRecentCards.size() +
+                " cards from most recent area (" + futureAreasList.size() + " total future areas): " +
+                mostRecentCards.stream().map(Card::number).toList());
     }
 
     /**
@@ -126,9 +142,16 @@ public class UIGameStateSynchronizer {
         System.out.println("💰 Active stash updated: " + candyCount + " candy, " + coffeeCount + " coffee");
 
         // Enable/disable end turn button based on game state
-        boolean canEndTurn = !state.gameEnd() && !state.present().cards().isEmpty();
+        // The end turn button should be enabled if:
+        // 1. Game is not ended
+        // 2. Present area has cards (normal case) OR present area is empty but past area has cards
+        //    (This handles the BELOW_THE_STACK case where present is empty but the turn should still be endable)
+        boolean canEndTurn = !state.gameEnd() &&
+                (!state.present().cards().isEmpty() || !state.past().cards().isEmpty());
+
         activeStash.setEndTurnEnabled(canEndTurn);
     }
+
 
     /**
      * Update the finished pile with scored cards.
