@@ -4,7 +4,6 @@ import com.adrian.finished.model.Card;
 import com.adrian.finished.model.GameState;
 import com.adrian.finished.ui.layout.*;
 
-import java.util.ArrayList;
 import java.util.Deque;
 import javafx.application.Platform;
 import java.util.List;
