@@ -78,17 +78,6 @@ public class PresentAreaLayout extends Region {
         this.candyActivationCallback = callback;
     }
 
-    public void addCard(Card card) {
-        contentArea.getChildren().clear();
-        cardComponents.clear();
-
-        if (card != null) {
-            InteractiveCardComponent cardComponent = createInteractiveCard(card);
-            cardComponents.add(cardComponent);
-            contentArea.getChildren().add(cardComponent);
-        }
-    }
-
     public void setCards(List<Card> cards) {
         contentArea.getChildren().clear();
         cardComponents.clear();
