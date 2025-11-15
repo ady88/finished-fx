@@ -80,16 +80,33 @@ public class InteractiveCardComponent extends CardComponent {
     }
 
     private void handleCandyActivation() {
-        if (!isCandyActivated()) {
-            // Try to activate with candy
-            if (tryActivateWithCandy()) {
-                // Notify callback
-                if (onCandyActivation != null) {
-                    onCandyActivation.run();
+        Card card = getCard();
+        if (card == null) return;
+
+        // Use the general approach based on Card model capabilities
+        if (hasMultipleCandySlots(card)) {
+            // Multi-candy cards: can be activated multiple times based on Card model logic
+            if (card.canTriggerAbility()) {
+                // Try to activate with candy
+                if (tryActivateWithCandy()) {
+                    // Notify callback
+                    if (onCandyActivation != null) {
+                        onCandyActivation.run();
+                    }
                 }
             }
+        } else {
+            // Single-candy cards: use the original UI boolean logic
+                // Try to activate with candy
+                if (tryActivateWithCandy()) {
+                    // Notify callback
+                    if (onCandyActivation != null) {
+                        onCandyActivation.run();
+                    }
+                }
         }
     }
+
 
     // Callback setters
     public void setOnCandyActivation(Runnable callback) {
@@ -109,16 +126,11 @@ public class InteractiveCardComponent extends CardComponent {
         return onCardSwap;
     }
 
-    // Override to allow external control of candy activation state
-    @Override
-    public void setCandyActivated(boolean candyActivated) {
-        super.setCandyActivated(candyActivated);
 
-        // Update interactive state
-        if (candyActivated) {
-            getStyleClass().add("candy-activated");
-        } else {
-            getStyleClass().remove("candy-activated");
-        }
+    /**
+     * Determines if this card supports multiple candy slots.
+     */
+    private boolean hasMultipleCandySlots(Card card) {
+        return card != null && card.maxAbilities() > 1;
     }
 }

@@ -117,10 +117,6 @@ public class PresentAreaLayout extends Region {
                 card
         );
 
-        // Set candy activated visual state based on whether the card has used abilities
-        boolean hasUsedAbilities = card.abilitiesTriggered() > 0;
-        cardComponent.setCandyActivated(hasUsedAbilities);
-
         // Set up candy activation handling
         if (candyActivationCallback != null) {
             cardComponent.setOnCandyActivation(() ->

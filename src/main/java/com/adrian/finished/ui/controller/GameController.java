@@ -196,7 +196,6 @@ public class GameController {
 
         if (availableAbilities.isEmpty()) {
             System.out.println("Card " + card.number() + " has no available abilities");
-            cardComponent.setCandyActivated(false);
             return;
         }
 
@@ -215,7 +214,6 @@ public class GameController {
             // Visual feedback will be handled by UI synchronizer
         } else {
             System.out.println("❌ Failed to execute ability " + primaryAbility);
-            cardComponent.setCandyActivated(false);
             // Clear pre-selected provider if the ability failed
             decisionProvider.setPreSelectedAbilityProviderIndex(null);
         }

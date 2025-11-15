@@ -18,7 +18,6 @@ public class CardComponent extends StackPane {
 
     protected final DimensionService dimensionService;
     private final ObjectProperty<Card> card = new SimpleObjectProperty<>();
-    private final BooleanProperty candyActivated = new SimpleBooleanProperty(false);
     private final BooleanProperty smallVariant = new SimpleBooleanProperty(false);
 
     private final ImageView backgroundImage;
@@ -77,13 +76,14 @@ public class CardComponent extends StackPane {
     }
 
     private void setupPropertyListeners() {
-        // Update image when card or candy state changes
+        // Update image when card changes - we only need to listen to card changes
+        // since the Card model contains abilitiesTriggered which drives visual state
         card.addListener((obs, oldCard, newCard) -> updateCardImage());
-        candyActivated.addListener((obs, oldState, newState) -> updateCardImage());
 
         // Initial update
         updateCardImage();
     }
+
 
     private void updateCardImage() {
         Card currentCard = card.get();
@@ -92,9 +92,16 @@ public class CardComponent extends StackPane {
             return;
         }
 
-        // Use the Card model's abilitiesTriggered to determine if candy is activated
-        // This ensures that cards moved to future areas retain their candy activation state
-        boolean shouldShowCandy = currentCard.abilitiesTriggered() > 0 || candyActivated.get();
+        // For cards with multiple candy slots (maxAbilities > 1), use Card model state
+        // For cards with single candy slot (maxAbilities <= 1), use either Card model or UI state
+        boolean shouldShowCandy;
+        if (hasMultipleCandySlots(currentCard)) {
+            // Multi-candy cards: always use Card model state
+            shouldShowCandy = currentCard.abilitiesTriggered() > 0;
+        } else {
+            // Single-candy cards: use Card model state OR UI state (for compatibility)
+            shouldShowCandy = currentCard.abilitiesTriggered() > 0; // || candyActivated.get();
+        }
 
         String imagePath = buildImagePath(currentCard.number(), shouldShowCandy, smallVariant.get());
         try {
@@ -113,16 +120,41 @@ public class CardComponent extends StackPane {
         }
     }
 
+
     private String buildImagePath(int cardNumber, boolean candyState, boolean small) {
         String basePath = "/assets/cards/";
         String suffix;
 
         if (small) {
-            // Small variant - check if candy activated
-            suffix = candyState ? "_cardc_small.png" : "_card_small.png";
+            // Small variant
+            if (candyState) {
+                Card currentCard = card.get();
+                if (currentCard != null && hasMultipleCandySlots(currentCard)) {
+                    // Multi-candy cards: use specific candy level
+                    int candyLevel = Math.max(1, currentCard.abilitiesTriggered()); // At least 1 if showing candy
+                    suffix = "_cardc_" + candyLevel + "_small.png";
+                } else {
+                    // Single-candy cards: use standard candy variant
+                    suffix = "_cardc_small.png";
+                }
+            } else {
+                suffix = "_card_small.png";
+            }
         } else {
-            // Normal variant - check if candy activated
-            suffix = candyState ? "_cardc.png" : "_card.png";
+            // Normal variant
+            if (candyState) {
+                Card currentCard = card.get();
+                if (currentCard != null && hasMultipleCandySlots(currentCard)) {
+                    // Multi-candy cards: use specific candy level
+                    int candyLevel = Math.max(1, currentCard.abilitiesTriggered()); // At least 1 if showing candy
+                    suffix = "_cardc_" + candyLevel + ".png";
+                } else {
+                    // Single-candy cards: use standard candy variant
+                    suffix = "_cardc.png";
+                }
+            } else {
+                suffix = "_card.png";
+            }
         }
 
         return basePath + cardNumber + suffix;
@@ -130,34 +162,78 @@ public class CardComponent extends StackPane {
 
     /**
      * Attempts to activate the card with candy if eligible.
+     * Uses Card model logic for cards with multiple candy slots.
+     * Uses UI boolean logic for cards with single candy slot (backward compatibility).
      * @return true if candy was successfully applied, false otherwise
      */
     public boolean tryActivateWithCandy() {
-        if (candyActivated.get()) {
-            return false; // Already activated
+        Card currentCard = card.get();
+        if (currentCard == null) {
+            return false; // No card to activate
         }
 
-        if (!isCandyEligible()) {
-            return false; // Not eligible for candy
-        }
+        // For multi-candy cards, use Card model logic
+        if (hasMultipleCandySlots(currentCard)) {
+            // Check if the card can still trigger abilities (based on Card model logic)
+            if (!currentCard.canTriggerAbility()) {
+                return false; // Card has reached its ability limit
+            }
 
-        candyActivated.set(true);
-        return true;
+            // Check if the next candy level image exists
+            if (!isCandyEligible()) {
+                return false; // Not eligible for candy (image doesn't exist)
+            }
+
+            // For multi-candy cards, don't modify UI state - let the Card model drive everything
+            return true;
+        } else {
+
+            if (!isCandyEligible()) {
+                return false; // Not eligible for candy
+            }
+
+            return true;
+        }
     }
 
     /**
      * UI-only heuristic for determining candy eligibility.
-     * A card is eligible if its candy variant image exists.
+     * For multi-candy cards, check if the next candy level image exists.
+     * For single-candy cards, check if the candy variant image exists.
      */
     private boolean isCandyEligible() {
-        if (card.get() == null) return false;
+        Card currentCard = card.get();
+        if (currentCard == null) return false;
 
-        String candyImagePath = buildImagePath(card.get().number(), true, smallVariant.get());
-        try {
-            Image testImage = new Image(getClass().getResourceAsStream(candyImagePath));
-            return !testImage.isError();
-        } catch (Exception e) {
-            return false;
+        if (hasMultipleCandySlots(currentCard)) {
+            // Multi-candy cards: check if the next candy level image exists
+            int nextCandyLevel = currentCard.abilitiesTriggered() + 1;
+            if (nextCandyLevel > currentCard.maxAbilities()) {
+                return false; // Already at maximum candy level
+            }
+
+            // Build path for the next candy level
+            String basePath = "/assets/cards/";
+            String suffix = smallVariant.get()
+                    ? "_cardc_" + nextCandyLevel + "_small.png"
+                    : "_cardc_" + nextCandyLevel + ".png";
+            String candyImagePath = basePath + currentCard.number() + suffix;
+
+            try {
+                Image testImage = new Image(getClass().getResourceAsStream(candyImagePath));
+                return !testImage.isError();
+            } catch (Exception e) {
+                return false;
+            }
+        } else {
+            // Single-candy cards: check if the standard candy variant exists
+            String candyImagePath = buildImagePath(currentCard.number(), true, smallVariant.get());
+            try {
+                Image testImage = new Image(getClass().getResourceAsStream(candyImagePath));
+                return !testImage.isError();
+            } catch (Exception e) {
+                return false;
+            }
         }
     }
 
@@ -194,10 +270,33 @@ public class CardComponent extends StackPane {
     public Card getCard() { return card.get(); }
     public void setCard(Card card) { this.card.set(card); }
 
-    public BooleanProperty candyActivatedProperty() { return candyActivated; }
-    public boolean isCandyActivated() { return candyActivated.get(); }
-    public void setCandyActivated(boolean activated) { this.candyActivated.set(activated); }
-
     public BooleanProperty smallVariantProperty() { return smallVariant; }
     public boolean isSmallVariant() { return smallVariant.get(); }
+
+
+    /**
+     * Determines if this card can still be activated with candy.
+     * For multi-candy cards, uses Card model logic.
+     * For single-candy cards, uses UI boolean logic.
+     */
+    public boolean canBeActivatedWithCandy() {
+        Card currentCard = card.get();
+        if (currentCard == null) return false;
+
+        if (hasMultipleCandySlots(currentCard)) {
+            // Multi-candy cards: use Card model logic
+            return currentCard.canTriggerAbility() && isCandyEligible();
+        } else {
+            // Single-candy cards: use UI boolean logic
+            return isCandyEligible(); //!candyActivated.get() &&
+        }
+    }
+
+    /**
+     * Determines if this card supports multiple candy slots.
+     */
+    private boolean hasMultipleCandySlots(Card card) {
+        return card.maxAbilities() > 1;
+    }
+
 }
